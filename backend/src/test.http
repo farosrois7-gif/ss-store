@@ -1,0 +1,109 @@
+### 1
+POST http://localhost:5000/api/products
+Content-Type: application/json
+
+{
+  "name": "Nugget Ayam Original",
+  "price": 45000,
+  "stock": 20,
+  "description": "Nugget ayam crispy siap goreng"
+}
+
+### 2
+POST http://localhost:5000/api/products
+Content-Type: application/json
+
+{
+  "name": "Sosis Sapi Premium",
+  "price": 55000,
+  "stock": 15,
+  "description": "Sosis sapi kualitas premium"
+}
+
+### 3
+POST http://localhost:5000/api/products
+Content-Type: application/json
+
+{
+  "name": "Dimsum Ayam Udang",
+  "price": 60000,
+  "stock": 25,
+  "description": "Dimsum isi ayam dan udang lezat"
+}
+
+### 4
+POST http://localhost:5000/api/products
+Content-Type: application/json
+
+{
+  "name": "Kentang Goreng Frozen",
+  "price": 30000,
+  "stock": 30,
+  "description": "Kentang beku siap goreng"
+}
+
+### 5
+POST http://localhost:5000/api/products
+Content-Type: application/json
+
+{
+  "name": "Bakso Sapi Frozen",
+  "price": 50000,
+  "stock": 18,
+  "description": "Bakso sapi kenyal dan gurih"
+}
+
+### 6
+POST http://localhost:5000/api/products
+Content-Type: application/json
+
+{
+  "name": "Chicken Katsu",
+  "price": 65000,
+  "stock": 12,
+  "description": "Chicken katsu crispy ala Jepang"
+}
+
+### 7
+POST http://localhost:5000/api/products
+Content-Type: application/json
+
+{
+  "name": "Tempura Udang",
+  "price": 70000,
+  "stock": 10,
+  "description": "Udang tempura renyah dan gurih"
+}
+
+### 8
+POST http://localhost:5000/api/products
+Content-Type: application/json
+
+{
+  "name": "Cireng Frozen",
+  "price": 25000,
+  "stock": 40,
+  "description": "Cireng isi siap goreng"
+}
+
+### 9
+POST http://localhost:5000/api/products
+Content-Type: application/json
+
+{
+  "name": "Risoles Mayo Frozen",
+  "price": 35000,
+  "stock": 22,
+  "description": "Risoles isi mayo dan ayam"
+}
+
+### 10
+POST http://localhost:5000/api/products
+Content-Type: application/json
+
+{
+  "name": "Siomay Ikan Frozen",
+  "price": 48000,
+  "stock": 16,
+  "description": "Siomay ikan lezat dan sehat"
+}
