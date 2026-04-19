@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/axios";
 
+const BASE_URL = "https://ss-store-production.up.railway.app";
+
 export default function Produk() {
     const [products, setProducts] = useState([]);
     const [showModal, setShowModal] = useState(false);
@@ -86,11 +88,12 @@ export default function Produk() {
         fetchProducts();
     };
 
+    // 🔥 FIX IMAGE URL PRODUCTION
     const getImageUrl = (image) => {
         if (!image) return "";
         return image.startsWith("http")
             ? image
-            : `http://localhost:5000${image}`;
+            : `${BASE_URL}${image}`;
     };
 
     return (
@@ -119,7 +122,10 @@ export default function Produk() {
             {loading ? (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
                     {[...Array(8)].map((_, i) => (
-                        <div key={i} className="bg-white rounded-lg border animate-pulse h-40" />
+                        <div
+                            key={i}
+                            className="bg-white rounded-lg border animate-pulse h-40"
+                        />
                     ))}
                 </div>
             ) : products.length === 0 ? (
@@ -128,58 +134,56 @@ export default function Produk() {
                 </div>
             ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                    {products.map((item) => {
-                        const id = item._id;
+                    {products.map((item) => (
+                        <div
+                            key={item._id}
+                            className="bg-white rounded-lg border hover:shadow-md hover:-translate-y-1 transition overflow-hidden"
+                        >
 
-                        return (
-                            <div
-                                key={id}
-                                className="bg-white rounded-lg border hover:shadow-md hover:-translate-y-1 transition overflow-hidden"
-                            >
-                                {/* IMAGE */}
-                                <div className="aspect-square bg-gray-100 overflow-hidden">
-                                    <img
-                                        src={getImageUrl(item.image)}
-                                        className="w-full h-full object-cover hover:scale-105 transition"
-                                    />
+                            {/* IMAGE */}
+                            <div className="aspect-square bg-gray-100 overflow-hidden">
+                                <img
+                                    src={getImageUrl(item.image)}
+                                    className="w-full h-full object-cover hover:scale-105 transition"
+                                    alt={item.name}
+                                />
+                            </div>
+
+                            {/* CONTENT */}
+                            <div className="p-2 space-y-1">
+                                <h2 className="text-xs font-semibold line-clamp-1">
+                                    {item.name}
+                                </h2>
+
+                                <p className="text-indigo-600 font-bold text-sm">
+                                    Rp {Number(item.price).toLocaleString("id-ID")}
+                                </p>
+
+                                <div className="flex justify-between items-center text-[10px] text-gray-500">
+                                    <span className="bg-gray-100 px-1.5 py-0.5 rounded">
+                                        {item.stock} pcs
+                                    </span>
                                 </div>
 
-                                {/* CONTENT */}
-                                <div className="p-2 space-y-1">
-                                    <h2 className="text-xs font-semibold line-clamp-1">
-                                        {item.name}
-                                    </h2>
+                                {/* ACTION */}
+                                <div className="flex justify-between pt-1 text-[10px]">
+                                    <button
+                                        onClick={() => openEdit(item)}
+                                        className="text-blue-600"
+                                    >
+                                        Edit
+                                    </button>
 
-                                    <p className="text-indigo-600 font-bold text-sm">
-                                        Rp {Number(item.price).toLocaleString("id-ID")}
-                                    </p>
-
-                                    <div className="flex justify-between items-center text-[10px] text-gray-500">
-                                        <span className="bg-gray-100 px-1.5 py-0.5 rounded">
-                                            {item.stock} pcs
-                                        </span>
-                                    </div>
-
-                                    {/* ACTION */}
-                                    <div className="flex justify-between pt-1 text-[10px]">
-                                        <button
-                                            onClick={() => openEdit(item)}
-                                            className="text-blue-600"
-                                        >
-                                            Edit
-                                        </button>
-
-                                        <button
-                                            onClick={() => handleDelete(id)}
-                                            className="text-red-600"
-                                        >
-                                            Hapus
-                                        </button>
-                                    </div>
+                                    <button
+                                        onClick={() => handleDelete(item._id)}
+                                        className="text-red-600"
+                                    >
+                                        Hapus
+                                    </button>
                                 </div>
                             </div>
-                        );
-                    })}
+                        </div>
+                    ))}
                 </div>
             )}
 
