@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 import { api } from "../api/axios";
 import { useNavigate } from "react-router-dom";
 
+const BASE_URL = "https://ss-store-production.up.railway.app";
+
 export default function UserHome() {
     const [products, setProducts] = useState([]);
     const [search, setSearch] = useState("");
@@ -31,9 +33,12 @@ export default function UserHome() {
         if (notif) setHistoryNotif(true);
     }, []);
 
+    // ✔ FIX IMAGE URL PRODUCTION
     const getImageUrl = (image) => {
         if (!image) return "";
-        return `http://localhost:5000${image}`;
+        return image.startsWith("http")
+            ? image
+            : `${BASE_URL}${image}`;
     };
 
     const addToCart = (product) => {
@@ -77,7 +82,6 @@ export default function UserHome() {
             <div className="bg-white shadow sticky top-0 z-50">
                 <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 px-4 py-3">
 
-                    {/* LOGO */}
                     <h1
                         onClick={() => navigate("/shop")}
                         className="text-lg md:text-xl font-bold text-indigo-600 cursor-pointer"
@@ -85,7 +89,6 @@ export default function UserHome() {
                         SS Store
                     </h1>
 
-                    {/* SEARCH */}
                     <input
                         type="text"
                         placeholder="Cari produk..."
@@ -94,10 +97,8 @@ export default function UserHome() {
                         className="w-full md:w-1/3 border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     />
 
-                    {/* RIGHT */}
                     <div className="flex items-center gap-4">
 
-                        {/* CART */}
                         <div
                             className="relative cursor-pointer"
                             onClick={() => navigate("/cart")}
@@ -111,7 +112,6 @@ export default function UserHome() {
                             )}
                         </div>
 
-                        {/* USER */}
                         <div className="relative group">
                             <div className="flex items-center gap-2 cursor-pointer">
                                 <span>👤</span>
