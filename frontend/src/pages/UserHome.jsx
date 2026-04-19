@@ -70,6 +70,9 @@ export default function UserHome() {
     const handleLogout = () => {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
+        localStorage.removeItem("cart");
+
+
         window.location.reload();
     };
 
