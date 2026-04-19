@@ -1,10 +1,9 @@
 import { useState } from "react";
 import { api } from "../api/axios";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 export default function Login() {
     const navigate = useNavigate();
-    const location = useLocation();
 
     const [form, setForm] = useState({
         email: "",
@@ -22,12 +21,19 @@ export default function Login() {
             const token = res.data.data.token;
             const user = res.data.data.user;
 
+            // simpan auth
             localStorage.setItem("token", token);
             localStorage.setItem("user", JSON.stringify(user));
             localStorage.setItem("role", user.role);
 
-            const from = location.state?.from || "/shop";
-            navigate(from);
+            // =========================
+            // FIX ROLE REDIRECT
+            // =========================
+            if (user.role === "admin") {
+                navigate("/dashboard");
+            } else {
+                navigate("/shop");
+            }
 
         } catch (err) {
             alert(err.response?.data?.message || "Login gagal");
@@ -80,6 +86,7 @@ export default function Login() {
                         Register
                     </a>
                 </p>
+
             </div>
         </div>
     );
