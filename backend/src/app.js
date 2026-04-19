@@ -26,8 +26,9 @@ app.use(express.json());
 app.use(cors({
     origin: [
         "http://localhost:5173",
-        "https://nama-project.vercel.app"
-    ]
+        "https://ss-store-iota.vercel.app"
+    ],
+    credentials: true
 }));
 
 app.use("/uploads", express.static(path.join(process.cwd(), "public/uploads")));
