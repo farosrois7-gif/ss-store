@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from "react-router-dom";
+
 import Login from "../pages/Login";
 import Register from "../pages/Register";
 import MainLayout from "../layouts/MainLayout";
@@ -11,17 +12,45 @@ import History from "../pages/History";
 import ProtectedRoute from "../components/ProtectedRoute";
 
 export default function AppRoutes() {
+
+    const token = localStorage.getItem("token");
+    const role = localStorage.getItem("role");
+
     return (
         <Routes>
 
-            {/* redirect */}
-            <Route path="/" element={<Navigate to="/login" />} />
+            {/* =========================
+                HOMEPAGE (USER / GUEST)
+            ========================= */}
+            <Route path="/" element={<UserHome />} />
+            <Route path="/shop" element={<UserHome />} />
 
-            {/* public */}
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
+            {/* =========================
+                AUTH
+            ========================= */}
+            <Route
+                path="/login"
+                element={
+                    token ? <Navigate to="/" /> : <Login />
+                }
+            />
 
-            {/* 🔥 PROTECTED + LAYOUT */}
+            <Route
+                path="/register"
+                element={
+                    token ? <Navigate to="/" /> : <Register />
+                }
+            />
+
+            {/* =========================
+                USER FEATURES
+            ========================= */}
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/history" element={<History />} />
+
+            {/* =========================
+                ADMIN PROTECTED ROUTE
+            ========================= */}
             <Route
                 element={
                     <ProtectedRoute>
@@ -29,16 +58,22 @@ export default function AppRoutes() {
                     </ProtectedRoute>
                 }
             >
-                <Route path="/dashboard" element={<Dashboard />} />
+                <Route
+                    path="/dashboard"
+                    element={
+                        role === "admin"
+                            ? <Dashboard />
+                            : <Navigate to="/" />
+                    }
+                />
                 <Route path="/produk" element={<Produk />} />
                 <Route path="/penjualan" element={<Penjualan />} />
             </Route>
-            <Route path="/shop" element={<UserHome />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/history" element={<History />} />
 
-            {/* fallback */}
-            <Route path="*" element={<h1>404 Not Found</h1>} />
+            {/* =========================
+                FALLBACK
+            ========================= */}
+            <Route path="*" element={<Navigate to="/" />} />
 
         </Routes>
     );

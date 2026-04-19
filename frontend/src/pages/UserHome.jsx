@@ -9,13 +9,15 @@ export default function UserHome() {
     const [search, setSearch] = useState("");
     const [cartCount, setCartCount] = useState(0);
     const [historyNotif, setHistoryNotif] = useState(false);
+    const [showLoginPopup, setShowLoginPopup] = useState(false);
 
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem("user"));
+    const isLogin = !!localStorage.getItem("token");
 
     const fetchProducts = async () => {
         const res = await api.get("/products");
-        setProducts(res.data.data);
+        setProducts(res.data.data || []);
     };
 
     useEffect(() => {
@@ -33,7 +35,6 @@ export default function UserHome() {
         if (notif) setHistoryNotif(true);
     }, []);
 
-    // ✔ FIX IMAGE URL PRODUCTION
     const getImageUrl = (image) => {
         if (!image) return "";
         return image.startsWith("http")
@@ -41,7 +42,15 @@ export default function UserHome() {
             : `${BASE_URL}${image}`;
     };
 
+    // =========================
+    // ADD TO CART (LOGIN CHECK)
+    // =========================
     const addToCart = (product) => {
+        if (!isLogin) {
+            setShowLoginPopup(true);
+            return;
+        }
+
         let cart = JSON.parse(localStorage.getItem("cart")) || [];
 
         const existing = cart.find((item) => item._id === product._id);
@@ -56,13 +65,12 @@ export default function UserHome() {
 
         const total = cart.reduce((acc, item) => acc + item.qty, 0);
         setCartCount(total);
-
-        alert("Masuk ke keranjang 🛒");
     };
 
     const handleLogout = () => {
-        localStorage.clear();
-        navigate("/login");
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        window.location.reload();
     };
 
     const goToHistory = () => {
@@ -99,9 +107,16 @@ export default function UserHome() {
 
                     <div className="flex items-center gap-4">
 
+                        {/* CART */}
                         <div
                             className="relative cursor-pointer"
-                            onClick={() => navigate("/cart")}
+                            onClick={() => {
+                                if (!isLogin) {
+                                    setShowLoginPopup(true);
+                                    return;
+                                }
+                                navigate("/cart");
+                            }}
                         >
                             <span className="text-xl">🛒</span>
 
@@ -112,15 +127,17 @@ export default function UserHome() {
                             )}
                         </div>
 
+                        {/* USER */}
                         <div className="relative group">
                             <div className="flex items-center gap-2 cursor-pointer">
                                 <span>👤</span>
                                 <span className="text-xs md:text-sm text-gray-600">
-                                    {user?.name || "User"}
+                                    {user?.name || "Guest"}
                                 </span>
                             </div>
 
                             <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded-xl opacity-0 group-hover:opacity-100 transition p-2 z-50">
+
                                 <div
                                     onClick={goToHistory}
                                     className="flex justify-between items-center px-3 py-2 rounded-lg hover:bg-gray-100 text-sm cursor-pointer"
@@ -132,12 +149,21 @@ export default function UserHome() {
                                     )}
                                 </div>
 
-                                <button
-                                    onClick={handleLogout}
-                                    className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 text-sm text-red-500"
-                                >
-                                    Logout
-                                </button>
+                                {isLogin ? (
+                                    <button
+                                        onClick={handleLogout}
+                                        className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 text-sm text-red-500"
+                                    >
+                                        Logout
+                                    </button>
+                                ) : (
+                                    <button
+                                        onClick={() => navigate("/login")}
+                                        className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 text-sm text-indigo-600"
+                                    >
+                                        Login
+                                    </button>
+                                )}
                             </div>
                         </div>
                     </div>
@@ -145,19 +171,17 @@ export default function UserHome() {
             </div>
 
             {/* BANNER */}
-            <div className="max-w-7xl mx-auto mt-4 md:mt-6 px-4">
-                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-4 md:p-6 rounded-2xl shadow">
-                    <h2 className="text-lg md:text-2xl font-bold">
-                        Promo Hari Ini 🔥
-                    </h2>
-                    <p className="text-xs md:text-sm opacity-90">
+            <div className="max-w-7xl mx-auto mt-4 px-4">
+                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-5 rounded-2xl shadow">
+                    <h2 className="text-xl font-bold">Promo Hari Ini 🔥</h2>
+                    <p className="text-sm opacity-90">
                         Diskon besar-besaran untuk semua produk!
                     </p>
                 </div>
             </div>
 
             {/* PRODUK */}
-            <div className="max-w-7xl mx-auto p-4 mt-4 md:mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+            <div className="max-w-7xl mx-auto p-4 mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
 
                 {filteredProducts.map((item) => (
                     <div
@@ -166,16 +190,17 @@ export default function UserHome() {
                     >
                         <img
                             src={getImageUrl(item.image)}
-                            className="w-full h-32 sm:h-36 md:h-40 object-cover"
+                            className="w-full h-40 object-cover"
                             alt={item.name}
                         />
 
-                        <div className="p-3 md:p-4">
-                            <h2 className="font-semibold text-xs md:text-sm line-clamp-2">
+                        <div className="p-3">
+
+                            <h2 className="font-semibold text-sm line-clamp-2">
                                 {item.name}
                             </h2>
 
-                            <p className="text-indigo-600 font-bold mt-1 text-sm md:text-base">
+                            <p className="text-indigo-600 font-bold mt-1">
                                 Rp {item.price}
                             </p>
 
@@ -185,14 +210,46 @@ export default function UserHome() {
 
                             <button
                                 onClick={() => addToCart(item)}
-                                className="mt-2 md:mt-3 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-1.5 md:py-2 rounded-lg text-xs md:text-sm"
+                                className="mt-2 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm"
                             >
                                 + Keranjang
                             </button>
+
                         </div>
                     </div>
                 ))}
             </div>
+
+            {/* LOGIN POPUP */}
+            {showLoginPopup && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                    <div className="bg-white p-6 rounded-xl w-80 text-center">
+
+                        <h2 className="text-lg font-bold mb-2">
+                            Login Dulu
+                        </h2>
+
+                        <p className="text-sm text-gray-500 mb-4">
+                            Untuk menambahkan ke keranjang, kamu harus login dulu
+                        </p>
+
+                        <button
+                            onClick={() => navigate("/login")}
+                            className="bg-indigo-600 text-white px-4 py-2 rounded-lg w-full"
+                        >
+                            Login Sekarang
+                        </button>
+
+                        <button
+                            onClick={() => setShowLoginPopup(false)}
+                            className="mt-2 text-sm text-gray-500"
+                        >
+                            Nanti saja
+                        </button>
+
+                    </div>
+                </div>
+            )}
 
         </div>
     );

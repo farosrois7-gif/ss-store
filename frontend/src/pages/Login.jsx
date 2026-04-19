@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { api } from "../api/axios";
-import { useNavigate } from "react-router-dom"; // ✅ tambah ini
+import { useNavigate, useLocation } from "react-router-dom";
 
 export default function Login() {
-    const navigate = useNavigate(); // ✅ tambah ini
+    const navigate = useNavigate();
+    const location = useLocation();
 
     const [form, setForm] = useState({
         email: "",
@@ -22,36 +23,40 @@ export default function Login() {
             const user = res.data.data.user;
 
             localStorage.setItem("token", token);
+            localStorage.setItem("user", JSON.stringify(user));
             localStorage.setItem("role", user.role);
 
-            if (user.role === "admin") {
-                navigate("/dashboard");
-            } else {
-                navigate("/shop"); // ✅ user masuk sini
-            }
+            const from = location.state?.from || "/shop";
+            navigate(from);
 
         } catch (err) {
-            alert(err.response?.data?.message || "Error");
+            alert(err.response?.data?.message || "Login gagal");
         }
     };
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500">
+        <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
 
-            <div className="absolute w-96 h-96 bg-white/10 rounded-full blur-3xl top-10 left-10"></div>
-            <div className="absolute w-96 h-96 bg-white/10 rounded-full blur-3xl bottom-10 right-10"></div>
+            {/* BACKGROUND */}
+            <div className="absolute w-72 h-72 bg-indigo-300/30 rounded-full blur-3xl top-10 left-10"></div>
+            <div className="absolute w-72 h-72 bg-purple-300/30 rounded-full blur-3xl bottom-10 right-10"></div>
 
-            <div className="relative backdrop-blur-lg bg-white/20 border border-white/30 p-8 rounded-2xl shadow-2xl w-96 text-white">
+            {/* CARD */}
+            <div className="relative w-full max-w-md bg-white rounded-2xl shadow-xl p-6">
 
-                <h2 className="text-3xl font-bold text-center mb-6">
-                    Welcome Back 👋
+                <h2 className="text-2xl font-bold text-gray-800 text-center">
+                    Welcome Back
                 </h2>
+
+                <p className="text-sm text-gray-500 text-center mb-6">
+                    Login ke SS Store
+                </p>
 
                 <input
                     name="email"
                     placeholder="Email"
                     onChange={handleChange}
-                    className="w-full mb-4 p-3 rounded-lg bg-white/30"
+                    className="w-full mb-3 p-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
 
                 <input
@@ -59,19 +64,19 @@ export default function Login() {
                     name="password"
                     placeholder="Password"
                     onChange={handleChange}
-                    className="w-full mb-4 p-3 rounded-lg bg-white/30"
+                    className="w-full mb-4 p-3 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
 
                 <button
                     onClick={handleSubmit}
-                    className="w-full bg-white text-indigo-600 font-semibold p-3 rounded-lg hover:scale-105 transition"
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-semibold p-3 rounded-lg transition"
                 >
                     Login
                 </button>
 
-                <p className="text-sm text-center mt-4">
+                <p className="text-sm text-center mt-4 text-gray-600">
                     Belum punya akun?{" "}
-                    <a href="/register" className="underline font-semibold">
+                    <a href="/register" className="text-indigo-600 font-semibold">
                         Register
                     </a>
                 </p>
