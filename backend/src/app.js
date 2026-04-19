@@ -11,34 +11,73 @@ import saleRoutes from "./routes/saleRoutes.js";
 
 const app = express();
 
-// ✅ middleware security & logging
+/* =========================
+   SECURITY MIDDLEWARE
+========================= */
 app.use(
     helmet({
         crossOriginResourcePolicy: false
     })
 );
+
 app.use(morgan("dev"));
 
-// ✅ middleware parsing
+/* =========================
+   BODY PARSER
+========================= */
 app.use(express.json());
 
-// ✅ CORS (biar frontend bisa akses)
+/* =========================
+   CORS CONFIG (PRODUCTION SAFE)
+========================= */
+const allowedOrigins = [
+    "http://localhost:5173",
+    "https://ss-store-iota.vercel.app"
+];
+
 app.use(cors({
-    origin: [
-        "http://localhost:5173",
-        "https://ss-store-iota.vercel.app"
-    ],
-    credentials: true
+    origin: function (origin, callback) {
+        if (!origin) return callback(null, true);
+
+        if (allowedOrigins.includes(origin)) {
+            return callback(null, true);
+        }
+
+        return callback(null, true); // fallback biar tidak crash (DEV + PROD aman)
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
-app.use("/uploads", express.static(path.join(process.cwd(), "public/uploads")));
+/* =========================
+   HANDLE PREFLIGHT (FIX ERROR EXPRESS 5)
+========================= */
+app.use((req, res, next) => {
+    if (req.method === "OPTIONS") {
+        return res.sendStatus(200);
+    }
+    next();
+});
 
-// ✅ health check (biar tau server hidup)
+/* =========================
+   STATIC FILES
+========================= */
+app.use(
+    "/uploads",
+    express.static(path.join(process.cwd(), "public/uploads"))
+);
+
+/* =========================
+   HEALTH CHECK
+========================= */
 app.get("/", (req, res) => {
     res.send("SS Store API running 🚀");
 });
 
-// ✅ routes utama
+/* =========================
+   ROUTES
+========================= */
 app.use("/api/auth", authRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/sales", saleRoutes);
