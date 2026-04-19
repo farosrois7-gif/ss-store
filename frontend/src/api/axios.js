@@ -1,7 +1,7 @@
 import axios from "axios";
 
 export const api = axios.create({
-    baseURL: "http://localhost:5000/api",
+    baseURL: "https://ss-store-production.up.railway.app/api",
 });
 
 // 🔥 AUTO KIRIM TOKEN KE SEMUA REQUEST

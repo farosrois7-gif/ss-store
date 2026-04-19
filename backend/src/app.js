@@ -24,7 +24,10 @@ app.use(express.json());
 
 // ✅ CORS (biar frontend bisa akses)
 app.use(cors({
-    origin: "http://localhost:5173"
+    origin: [
+        "http://localhost:5173",
+        "https://nama-project.vercel.app"
+    ]
 }));
 
 app.use("/uploads", express.static(path.join(process.cwd(), "public/uploads")));
