@@ -12,21 +12,30 @@ import { authMiddleware } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-// =========================
-// 🔥 USER ROUTES (SPECIFIC FIRST)
-// =========================
+/* =========================
+   🔥 DEBUG ROUTE (WAJIB BUAT CEK)
+========================= */
+router.get("/test", (req, res) => {
+    res.json({ message: "SALE ROUTE OK ✅" });
+});
+
+/* =========================
+   🔥 USER ROUTES (SPESIFIK)
+========================= */
 router.get("/me", authMiddleware, getMySales);
 router.get("/dashboard", getDashboard);
 
-// =========================
-// 🔥 MAIN ROUTES
-// =========================
+/* =========================
+   🔥 MAIN ROUTES
+========================= */
 router.get("/", getSales);
+
+// 🔥 INI YANG PENTING (POST HARUS ADA)
 router.post("/", authMiddleware, createSale);
 
-// =========================
-// 🔥 PARAM ROUTES (HARUS PALING BAWAH)
-// =========================
+/* =========================
+   🔥 PARAM ROUTES (PALING BAWAH)
+========================= */
 router.put("/:id", updateStatus);
 router.delete("/:id", deleteSale);
 
