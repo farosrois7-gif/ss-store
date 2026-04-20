@@ -9,11 +9,10 @@ export default function ProtectedRoute({ children }) {
         return <Navigate to="/login" replace />;
     }
 
-    // bukan admin
+    // bukan admin → lempar ke shop (bukan login lagi)
     if (role !== "admin") {
-        return <Navigate to="/login" replace />;
+        return <Navigate to="/shop" replace />;
     }
 
-    // admin boleh masuk
     return children;
 }

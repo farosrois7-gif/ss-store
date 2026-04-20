@@ -1,13 +1,14 @@
+import mongoose from "mongoose";
 import Sale from "../models/Sale.js";
 import Product from "../models/Product.js";
-import User from "../models/user.model.js"; // 🔥 TAMBAHAN
+import User from "../models/user.model.js";
 
 // ================== GET ALL ==================
 export const getSales = async (req, res) => {
     try {
         const sales = await Sale.find()
-            .populate("product")
-            .populate("user") // 🔥 biar bisa tampil nama user
+            .populate("user")
+            .populate("items.product")
             .sort({ createdAt: -1 });
 
         res.json({ data: sales });
@@ -19,35 +20,107 @@ export const getSales = async (req, res) => {
 // ================== CREATE ==================
 export const createSale = async (req, res) => {
     try {
-        const { product, quantity, totalPrice, paymentMethod } = req.body;
+        const { items, payment, address } = req.body;
 
-        const foundProduct = await Product.findById(product);
-
-        if (!foundProduct) {
-            return res.status(404).json({ message: "Produk tidak ditemukan" });
+        // 🔥 VALIDASI BASIC
+        if (!items || items.length === 0) {
+            return res.status(400).json({ message: "Cart kosong" });
         }
 
-        if (foundProduct.stock < quantity) {
-            return res.status(400).json({
-                message: "Stok tidak cukup",
+        if (!payment?.method) {
+            return res.status(400).json({ message: "Metode pembayaran wajib" });
+        }
+
+        if (!address?.detail) {
+            return res.status(400).json({ message: "Alamat wajib diisi" });
+        }
+
+        let totalPrice = 0;
+        const processedItems = [];
+
+        // =========================
+        // 🔥 LOOP ITEMS
+        // =========================
+        for (let item of items) {
+
+            // 🔥 DEBUG LOG
+            console.log("➡️ ITEM PRODUCT ID:", item.product);
+
+            // 🔥 VALIDASI OBJECT ID
+            if (!mongoose.Types.ObjectId.isValid(item.product)) {
+                return res.status(400).json({
+                    message: `ID tidak valid: ${item.product}`,
+                });
+            }
+
+            const product = await Product.findById(item.product);
+
+            if (!product) {
+                return res.status(404).json({
+                    message: `Produk tidak ditemukan: ${item.product}`,
+                });
+            }
+
+            if (product.stock < item.quantity) {
+                return res.status(400).json({
+                    message: `Stok ${product.name} tidak cukup`,
+                });
+            }
+
+            const subtotal = product.price * item.quantity;
+            totalPrice += subtotal;
+
+            processedItems.push({
+                product: product._id,
+                name: product.name,
+                price: product.price,
+                quantity: item.quantity,
+                subtotal,
             });
+
+            // 🔥 UPDATE STOCK
+            product.stock -= item.quantity;
+            await product.save();
         }
 
-        // 🔥 kurangi stok
-        foundProduct.stock -= quantity;
-        await foundProduct.save();
+        const shippingCost = 0;
+        const grandTotal = totalPrice + shippingCost;
 
-        // 🔥 simpan transaksi
+        const orderId = "ORDER-" + Date.now();
+
+        // =========================
+        // 🔥 CREATE ORDER
+        // =========================
         const sale = new Sale({
-            product,
-            quantity,
-            totalPrice,
+            orderId,
             user: req.user.id,
-            paymentMethod,
-            paymentStatus: paymentMethod === "cod" ? "pending" : "paid",
+            items: processedItems,
+            totalPrice,
+            shippingCost,
+            grandTotal,
+            address,
+            payment: {
+                method: payment.method,
+                status: "pending",
+            },
+            status: "pending",
         });
 
         await sale.save();
+
+        // =========================
+        // 🔥 PAYMENT GATEWAY (DUMMY)
+        // =========================
+        if (payment.method !== "cod") {
+            sale.payment.paymentUrl =
+                "https://payment-gateway.com/pay/" + orderId;
+
+            sale.payment.expiryTime = new Date(
+                Date.now() + 24 * 60 * 60 * 1000
+            );
+
+            await sale.save();
+        }
 
         res.status(201).json({
             message: "Checkout berhasil",
@@ -55,6 +128,7 @@ export const createSale = async (req, res) => {
         });
 
     } catch (error) {
+        console.error("❌ ERROR CREATE SALE:", error);
         res.status(500).json({ message: error.message });
     }
 };
@@ -63,8 +137,7 @@ export const createSale = async (req, res) => {
 export const getMySales = async (req, res) => {
     try {
         const sales = await Sale.find({ user: req.user.id })
-            .populate("product")
-            .populate("user")
+            .populate("items.product")
             .sort({ createdAt: -1 });
 
         res.json({ data: sales });
@@ -75,56 +148,60 @@ export const getMySales = async (req, res) => {
 
 // ================== UPDATE STATUS ==================
 export const updateStatus = async (req, res) => {
-    const { status } = req.body;
+    try {
+        const { status } = req.body;
 
-    const sale = await Sale.findByIdAndUpdate(
-        req.params.id,
-        { status },
-        { new: true }
-    );
+        const sale = await Sale.findByIdAndUpdate(
+            req.params.id,
+            { status },
+            { new: true }
+        );
 
-    res.json({ data: sale });
+        res.json({ data: sale });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
 
 // ================== DELETE ==================
 export const deleteSale = async (req, res) => {
-    await Sale.findByIdAndDelete(req.params.id);
-    res.json({ message: "Berhasil dihapus" });
+    try {
+        await Sale.findByIdAndDelete(req.params.id);
+        res.json({ message: "Berhasil dihapus" });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
 };
 
-// ================== 🔥 DASHBOARD ==================
+// ================== DASHBOARD ==================
 export const getDashboard = async (req, res) => {
     try {
-        // total produk
         const totalProducts = await Product.countDocuments();
-
-        // total user
         const totalUsers = await User.countDocuments();
 
-        // 🔥 penjualan hari ini
         const today = new Date();
         today.setHours(0, 0, 0, 0);
 
         const salesToday = await Sale.find({
             createdAt: { $gte: today },
-            status: "success",
+            status: { $in: ["paid", "processing", "shipped", "delivered"] },
         });
 
         const totalToday = salesToday.reduce(
-            (acc, item) => acc + item.totalPrice,
+            (acc, item) => acc + item.grandTotal,
             0
         );
 
-        // 🔥 total revenue (ALL TIME)
-        const allSales = await Sale.find({ status: "success" });
+        const allSales = await Sale.find({
+            status: { $in: ["paid", "processing", "shipped", "delivered"] },
+        });
+
         const totalRevenue = allSales.reduce(
-            (acc, item) => acc + item.totalPrice,
+            (acc, item) => acc + item.grandTotal,
             0
         );
 
-        // 🔥 transaksi terbaru
         const latestSales = await Sale.find()
-            .populate("product")
             .populate("user")
             .sort({ createdAt: -1 })
             .limit(5);

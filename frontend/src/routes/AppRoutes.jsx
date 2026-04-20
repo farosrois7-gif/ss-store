@@ -31,14 +31,22 @@ export default function AppRoutes() {
             <Route
                 path="/login"
                 element={
-                    token ? <Navigate to="/" /> : <Login />
+                    token
+                        ? role === "admin"
+                            ? <Navigate to="/dashboard" replace />
+                            : <Navigate to="/shop" replace />
+                        : <Login />
                 }
             />
 
             <Route
                 path="/register"
                 element={
-                    token ? <Navigate to="/" /> : <Register />
+                    token
+                        ? role === "admin"
+                            ? <Navigate to="/dashboard" replace />
+                            : <Navigate to="/shop" replace />
+                        : <Register />
                 }
             />
 
@@ -58,14 +66,7 @@ export default function AppRoutes() {
                     </ProtectedRoute>
                 }
             >
-                <Route
-                    path="/dashboard"
-                    element={
-                        role === "admin"
-                            ? <Dashboard />
-                            : <Navigate to="/" />
-                    }
-                />
+                <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/produk" element={<Produk />} />
                 <Route path="/penjualan" element={<Penjualan />} />
             </Route>
@@ -73,7 +74,7 @@ export default function AppRoutes() {
             {/* =========================
                 FALLBACK
             ========================= */}
-            <Route path="*" element={<Navigate to="/" />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
 
         </Routes>
     );

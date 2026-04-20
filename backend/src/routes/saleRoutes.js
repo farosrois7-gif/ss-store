@@ -1,13 +1,33 @@
 import express from "express";
-import { getSales, createSale, updateStatus, deleteSale, getMySales, getDashboard } from "../controllers/saleController.js";
+import {
+    getSales,
+    createSale,
+    updateStatus,
+    deleteSale,
+    getMySales,
+    getDashboard
+} from "../controllers/saleController.js";
+
 import { authMiddleware } from "../middlewares/auth.middleware.js";
+
 const router = express.Router();
 
-router.get("/", getSales);
+// =========================
+// 🔥 USER ROUTES (SPECIFIC FIRST)
+// =========================
+router.get("/me", authMiddleware, getMySales);
 router.get("/dashboard", getDashboard);
-router.post("/", authMiddleware,createSale);
+
+// =========================
+// 🔥 MAIN ROUTES
+// =========================
+router.get("/", getSales);
+router.post("/", authMiddleware, createSale);
+
+// =========================
+// 🔥 PARAM ROUTES (HARUS PALING BAWAH)
+// =========================
 router.put("/:id", updateStatus);
 router.delete("/:id", deleteSale);
-router.get("/me", authMiddleware, getMySales);
 
 export default router;

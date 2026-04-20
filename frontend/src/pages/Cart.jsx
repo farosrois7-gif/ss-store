@@ -6,6 +6,15 @@ export default function Cart() {
     const [cart, setCart] = useState([]);
     const [paymentMethod, setPaymentMethod] = useState("cod");
 
+    // 🔥 ADDRESS OBJECT (WAJIB)
+    const [address, setAddress] = useState({
+        name: "",
+        phone: "",
+        detail: "",
+        city: "",
+        postalCode: "",
+    });
+
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -13,7 +22,7 @@ export default function Cart() {
         setCart(data);
     }, []);
 
-    // UPDATE QTY
+    // ================= UPDATE QTY =================
     const updateQty = (index, newQty) => {
         if (newQty < 1) return;
 
@@ -29,35 +38,58 @@ export default function Cart() {
         localStorage.setItem("cart", JSON.stringify(newCart));
     };
 
-    // HAPUS ITEM
+    // ================= REMOVE =================
     const removeItem = (index) => {
         const newCart = cart.filter((_, i) => i !== index);
         setCart(newCart);
         localStorage.setItem("cart", JSON.stringify(newCart));
     };
 
-    // TOTAL
+    // ================= TOTAL =================
     const total = cart.reduce(
         (acc, item) => acc + item.price * item.qty,
         0
     );
 
-    // CHECKOUT
+    // ================= CHECKOUT =================
     const checkout = async () => {
         try {
-            for (let item of cart) {
-                await api.post("/sales", {
-                    product: item._id,
-                    quantity: item.qty,
-                    totalPrice: item.price * item.qty,
-                    paymentMethod,
-                });
+            // 🔥 VALIDASI
+            if (!address.name || !address.phone || !address.detail || !address.city) {
+                alert("Lengkapi alamat terlebih dahulu!");
+                return;
             }
 
+            if (cart.length === 0) {
+                alert("Keranjang kosong!");
+                return;
+            }
+
+            // 🔥 mapping cart → backend format
+            const items = cart.map((item) => ({
+                product: item._id,
+                quantity: item.qty,
+            }));
+
+            const res = await api.post("/sales", {
+                items,
+                payment: {
+                    method: paymentMethod,
+                },
+                address,
+            });
+
+            const sale = res.data.data;
+
+            // 🔥 kalau pakai gateway → redirect
+            if (sale?.payment?.paymentUrl) {
+                window.location.href = sale.payment.paymentUrl;
+                return;
+            }
+
+            // 🔥 COD SUCCESS
             localStorage.removeItem("cart");
             setCart([]);
-
-            localStorage.setItem("checkoutSuccess", "1");
 
             alert("Checkout berhasil 🎉");
             navigate("/shop");
@@ -90,10 +122,7 @@ export default function Cart() {
                     )}
 
                     {cart.map((item, i) => (
-                        <div
-                            key={i}
-                            className="bg-white rounded-2xl shadow p-4 flex gap-4 items-center"
-                        >
+                        <div key={i} className="bg-white rounded-2xl shadow p-4 flex gap-4 items-center">
                             <img
                                 src={`http://localhost:5000${item.image}`}
                                 className="w-20 h-20 object-cover rounded-xl"
@@ -101,43 +130,19 @@ export default function Cart() {
                             />
 
                             <div className="flex-1">
-                                <h2 className="font-semibold">
-                                    {item.name}
-                                </h2>
-                                <p className="text-indigo-600 font-bold">
-                                    Rp {item.price}
-                                </p>
+                                <h2 className="font-semibold">{item.name}</h2>
+                                <p className="text-indigo-600 font-bold">Rp {item.price}</p>
 
                                 <div className="flex items-center mt-2 gap-2">
-                                    <button
-                                        onClick={() => updateQty(i, item.qty - 1)}
-                                        className="w-8 h-8 bg-gray-200 rounded-lg"
-                                    >
-                                        -
-                                    </button>
-
-                                    <span className="px-3 font-semibold">
-                                        {item.qty}
-                                    </span>
-
-                                    <button
-                                        onClick={() => updateQty(i, item.qty + 1)}
-                                        className="w-8 h-8 bg-gray-200 rounded-lg"
-                                    >
-                                        +
-                                    </button>
+                                    <button onClick={() => updateQty(i, item.qty - 1)} className="w-8 h-8 bg-gray-200 rounded-lg">-</button>
+                                    <span className="px-3 font-semibold">{item.qty}</span>
+                                    <button onClick={() => updateQty(i, item.qty + 1)} className="w-8 h-8 bg-gray-200 rounded-lg">+</button>
                                 </div>
                             </div>
 
                             <div className="text-right">
-                                <p className="font-bold">
-                                    Rp {item.price * item.qty}
-                                </p>
-
-                                <button
-                                    onClick={() => removeItem(i)}
-                                    className="text-red-500 text-sm mt-2 hover:underline"
-                                >
+                                <p className="font-bold">Rp {item.price * item.qty}</p>
+                                <button onClick={() => removeItem(i)} className="text-red-500 text-sm mt-2 hover:underline">
                                     Hapus
                                 </button>
                             </div>
@@ -149,22 +154,46 @@ export default function Cart() {
                 {cart.length > 0 && (
                     <div className="bg-white rounded-2xl shadow p-6 h-fit">
 
-                        <h2 className="text-lg font-bold mb-4">
-                            Ringkasan
-                        </h2>
+                        <h2 className="text-lg font-bold mb-4">Ringkasan</h2>
 
                         <div className="flex justify-between mb-2">
                             <span>Total</span>
-                            <span className="font-bold">
-                                Rp {total}
-                            </span>
+                            <span className="font-bold">Rp {total}</span>
+                        </div>
+
+                        {/* 🔥 ADDRESS FORM */}
+                        <div className="mt-4">
+                            <p className="font-semibold mb-2">Alamat Pengiriman</p>
+
+                            <input placeholder="Nama"
+                                   className="border p-2 rounded-lg w-full mb-2"
+                                   onChange={(e) => setAddress({ ...address, name: e.target.value })}
+                            />
+
+                            <input placeholder="No HP"
+                                   className="border p-2 rounded-lg w-full mb-2"
+                                   onChange={(e) => setAddress({ ...address, phone: e.target.value })}
+                            />
+
+                            <textarea placeholder="Alamat lengkap"
+                                      className="border p-2 rounded-lg w-full mb-2"
+                                      onChange={(e) => setAddress({ ...address, detail: e.target.value })}
+                            />
+
+                            <input placeholder="Kota"
+                                   className="border p-2 rounded-lg w-full mb-2"
+                                   onChange={(e) => setAddress({ ...address, city: e.target.value })}
+                            />
+
+                            <input placeholder="Kode Pos"
+                                   className="border p-2 rounded-lg w-full"
+                                   onChange={(e) => setAddress({ ...address, postalCode: e.target.value })}
+                            />
                         </div>
 
                         {/* PAYMENT */}
                         <div className="mt-4">
-                            <p className="font-semibold mb-2">
-                                Metode Pembayaran
-                            </p>
+                            <p className="font-semibold mb-2">Metode Pembayaran</p>
 
                             <select
                                 value={paymentMethod}
@@ -177,45 +206,6 @@ export default function Cart() {
                                 <option value="qris">QRIS</option>
                             </select>
                         </div>
-
-                        {/* 🔥 DETAIL PAYMENT */}
-                        {paymentMethod === "transfer" && (
-                            <div className="mt-4 text-sm bg-gray-50 p-3 rounded-lg">
-                                Transfer ke:
-                                <br />
-                                <b>BCA - 123456789</b>
-                                <br />
-                                a.n SS Store
-                            </div>
-                        )}
-
-                        {paymentMethod === "ewallet" && (
-                            <div className="mt-4 text-sm bg-gray-50 p-3 rounded-lg">
-                                Kirim ke:
-                                <br />
-                                <b>DANA / OVO / GOPAY</b>
-                                <br />
-                                08123456789
-                            </div>
-                        )}
-
-                        {paymentMethod === "qris" && (
-                            <div className="mt-4 text-center bg-gray-50 p-4 rounded-lg">
-                                <p className="text-sm mb-2 font-semibold">
-                                    Scan QRIS
-                                </p>
-
-                                <img
-                                    src="/qris.png"
-                                    alt="QRIS"
-                                    className="w-40 mx-auto"
-                                />
-
-                                <p className="text-xs text-gray-500 mt-2">
-                                    (Simulasi QRIS)
-                                </p>
-                            </div>
-                        )}
 
                         <button
                             onClick={checkout}

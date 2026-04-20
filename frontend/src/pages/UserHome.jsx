@@ -58,7 +58,14 @@ export default function UserHome() {
         if (existing) {
             existing.qty += 1;
         } else {
-            cart.push({ ...product, qty: 1 });
+            cart.push({
+                _id: product._id, // 🔥 pastikan ini dikirim
+                name: product.name,
+                price: product.price,
+                image: product.image,
+                stock: product.stock,
+                qty: 1,
+            });
         }
 
         localStorage.setItem("cart", JSON.stringify(cart));
@@ -66,7 +73,6 @@ export default function UserHome() {
         const total = cart.reduce((acc, item) => acc + item.qty, 0);
         setCartCount(total);
     };
-
     const handleLogout = () => {
         localStorage.removeItem("token");
         localStorage.removeItem("user");
