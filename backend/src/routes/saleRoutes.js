@@ -16,9 +16,8 @@ const router = express.Router();
    🔥 DEBUG ROUTE (WAJIB BUAT CEK)
 ========================= */
 router.get("/test", (req, res) => {
-    res.json({ message: "SALE ROUTE OK ✅" });
+    res.send("SALE ROUTE ACTIVE 🔥");
 });
-
 /* =========================
    🔥 USER ROUTES (SPESIFIK)
 ========================= */
