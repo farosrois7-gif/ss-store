@@ -9,20 +9,35 @@ export const getReviewsByProduct = async (req, res) => {
             productId: req.params.productId,
         }).sort({ createdAt: -1 });
 
-        res.json({ data: reviews });
+        res.status(200).json({ data: reviews });
     } catch (err) {
+        console.log("GET REVIEWS ERROR:", err);
         res.status(500).json({ message: err.message });
     }
 };
 
-// CREATE (🔐 wajib login)
+// CREATE REVIEW
 export const createReview = async (req, res) => {
     try {
         const { productId, rating, comment } = req.body;
 
+        // ❌ VALIDASI WAJIB
+        if (!productId || !rating || !comment) {
+            return res.status(400).json({
+                message: "productId, rating, comment wajib diisi",
+            });
+        }
+
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({
+                message: "Unauthorized user",
+            });
+        }
+
         const review = await Review.create({
             productId,
-            userName: req.user?.id || "User", // ✅ FIX DI SINI
+            userId: req.user.id, // ✅ pakai ID user (lebih benar)
+            userName: req.user.name || "User", // optional kalau ada di token
             rating,
             comment,
         });
@@ -43,8 +58,9 @@ export const getAllReviews = async (req, res) => {
             .populate("productId", "name")
             .populate("userId", "name email");
 
-        res.json({ data: reviews });
+        res.status(200).json({ data: reviews });
     } catch (err) {
+        console.log("GET ALL REVIEWS ERROR:", err);
         res.status(500).json({ message: err.message });
     }
 };
@@ -52,10 +68,17 @@ export const getAllReviews = async (req, res) => {
 // DELETE
 export const deleteReview = async (req, res) => {
     try {
-        await Review.findByIdAndDelete(req.params.id);
+        const deleted = await Review.findByIdAndDelete(req.params.id);
 
-        res.json({ message: "Review dihapus" });
+        if (!deleted) {
+            return res.status(404).json({
+                message: "Review tidak ditemukan",
+            });
+        }
+
+        res.status(200).json({ message: "Review dihapus" });
     } catch (err) {
+        console.log("DELETE REVIEW ERROR:", err);
         res.status(500).json({ message: err.message });
     }
 };
