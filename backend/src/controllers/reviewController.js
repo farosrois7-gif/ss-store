@@ -18,30 +18,18 @@ export const getReviewsByProduct = async (req, res) => {
 // CREATE (🔐 wajib login)
 export const createReview = async (req, res) => {
     try {
-        const { rating, comment, productId } = req.body;
-
-        // ambil dari token
-        const userId = req.user.id;
-        const userName = req.user.name;
-
-        // ❗ prevent spam (1 user 1 review / product)
-        const existing = await Review.findOne({ productId, userId });
-        if (existing) {
-            return res.status(400).json({
-                message: "Kamu sudah memberi review produk ini",
-            });
-        }
+        const { productId, rating, comment } = req.body;
 
         const review = await Review.create({
             productId,
-            userId,
-            userName,
+            userName: req.user?.name || "User",
             rating,
             comment,
         });
 
         res.status(201).json({ data: review });
     } catch (err) {
+        console.log(err); // 🔥 penting untuk debug
         res.status(500).json({ message: err.message });
     }
 };
