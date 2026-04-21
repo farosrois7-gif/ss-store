@@ -8,127 +8,162 @@ export default function UserHome() {
     const [products, setProducts] = useState([]);
     const [search, setSearch] = useState("");
     const [cartCount, setCartCount] = useState(0);
-    const [historyNotif, setHistoryNotif] = useState(false);
+    const [wishlist, setWishlist] = useState(
+        JSON.parse(localStorage.getItem("wishlist")) || []
+    );
     const [showLoginPopup, setShowLoginPopup] = useState(false);
+    const [currentSlide, setCurrentSlide] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const [visible, setVisible] = useState(10);
 
     const navigate = useNavigate();
     const user = JSON.parse(localStorage.getItem("user"));
     const isLogin = !!localStorage.getItem("token");
 
+    // ================= FETCH =================
     const fetchProducts = async () => {
-        const res = await api.get("/products");
-        setProducts(res.data.data || []);
+        try {
+            setLoading(true);
+            const res = await api.get("/products");
+
+            const data = (res.data.data || []).map((p) => ({
+                ...p,
+                rating: p.rating || (Math.random() * 5).toFixed(1),
+                discount: Math.floor(Math.random() * 40),
+            }));
+
+            setProducts(data);
+        } catch (err) {
+            console.log(err);
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
         fetchProducts();
     }, []);
 
+    // ================= HERO =================
     useEffect(() => {
-        const cart = JSON.parse(localStorage.getItem("cart")) || [];
-        const total = cart.reduce((acc, item) => acc + item.qty, 0);
-        setCartCount(total);
+        if (products.length === 0) return;
+
+        const interval = setInterval(() => {
+            setCurrentSlide((prev) =>
+                prev === products.slice(0, 5).length - 1 ? 0 : prev + 1
+            );
+        }, 3500);
+
+        return () => clearInterval(interval);
     }, [products]);
 
+    // ================= INFINITE SCROLL =================
     useEffect(() => {
-        const notif = localStorage.getItem("checkoutSuccess");
-        if (notif) setHistoryNotif(true);
+        const handleScroll = () => {
+            if (
+                window.innerHeight + window.scrollY >=
+                document.body.offsetHeight - 200
+            ) {
+                setVisible((prev) => prev + 10);
+            }
+        };
+
+        window.addEventListener("scroll", handleScroll);
+        return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    const getImageUrl = (image) => {
-        if (!image) return "";
-        return image.startsWith("http")
-            ? image
-            : `${BASE_URL}${image}`;
-    };
+    // ================= CART =================
+    useEffect(() => {
+        const cart = JSON.parse(localStorage.getItem("cart")) || [];
+        setCartCount(cart.reduce((acc, item) => acc + item.qty, 0));
+    }, [products]);
 
-    // =========================
-    // ADD TO CART (LOGIN CHECK)
-    // =========================
+    // ================= IMAGE =================
+    const getImageUrl = (img) =>
+        img?.startsWith("http") ? img : `${BASE_URL}${img}`;
+
+    // ================= ADD TO CART =================
     const addToCart = (product) => {
-        if (!isLogin) {
-            setShowLoginPopup(true);
-            return;
-        }
+        if (!isLogin) return setShowLoginPopup(true);
 
         let cart = JSON.parse(localStorage.getItem("cart")) || [];
+        const exist = cart.find((i) => i._id === product._id);
 
-        const existing = cart.find((item) => item._id === product._id);
-
-        if (existing) {
-            existing.qty += 1;
-        } else {
-            cart.push({
-                _id: product._id, // 🔥 pastikan ini dikirim
-                name: product.name,
-                price: product.price,
-                image: product.image,
-                stock: product.stock,
-                qty: 1,
-            });
-        }
+        if (exist) exist.qty += 1;
+        else cart.push({ ...product, qty: 1 });
 
         localStorage.setItem("cart", JSON.stringify(cart));
-
-        const total = cart.reduce((acc, item) => acc + item.qty, 0);
-        setCartCount(total);
-    };
-    const handleLogout = () => {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
-        localStorage.removeItem("cart");
-
-
-        window.location.reload();
+        setCartCount(cart.reduce((a, b) => a + b.qty, 0));
     };
 
-    const goToHistory = () => {
-        localStorage.removeItem("checkoutSuccess");
-        setHistoryNotif(false);
-        navigate("/history");
+    // ================= WISHLIST =================
+    const toggleWishlist = (product) => {
+        let updated;
+
+        if (wishlist.find((i) => i._id === product._id)) {
+            updated = wishlist.filter((i) => i._id !== product._id);
+        } else {
+            updated = [...wishlist, product];
+        }
+
+        setWishlist(updated);
+        localStorage.setItem("wishlist", JSON.stringify(updated));
     };
+
+    const renderStars = (rating) => "⭐".repeat(Math.round(rating));
 
     const filteredProducts = products.filter((p) =>
         p.name.toLowerCase().includes(search.toLowerCase())
     );
 
-    return (
-        <div className="min-h-screen bg-gray-100">
+    const heroProducts = products.filter((p) => p.image).slice(0, 5);
 
-            {/* NAVBAR */}
-            <div className="bg-white shadow sticky top-0 z-50">
-                <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-3 px-4 py-3">
+    return (
+        <div className="min-h-screen bg-gray-50">
+
+            {/* NAVBAR (TIDAK DIUBAH) */}
+            <div className="bg-white shadow-sm sticky top-0 z-50 border-b">
+                <div className="max-w-7xl mx-auto flex items-center justify-between px-4 py-3 gap-4">
 
                     <h1
                         onClick={() => navigate("/shop")}
-                        className="text-lg md:text-xl font-bold text-indigo-600 cursor-pointer"
+                        className="text-xl font-bold text-indigo-600 cursor-pointer"
                     >
                         SS Store
                     </h1>
 
                     <input
-                        type="text"
                         placeholder="Cari produk..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full md:w-1/3 border rounded-full px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="flex-1 border px-4 py-2 rounded-full text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                     />
 
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-5">
 
-                        {/* CART */}
+                        {/* ❤️ */}
                         <div
-                            className="relative cursor-pointer"
-                            onClick={() => {
-                                if (!isLogin) {
-                                    setShowLoginPopup(true);
-                                    return;
-                                }
-                                navigate("/cart");
-                            }}
+                            onClick={() => navigate("/wishlist")}
+                            className="relative cursor-pointer text-xl"
                         >
-                            <span className="text-xl">🛒</span>
+                            ❤️
+                            {wishlist.length > 0 && (
+                                <span className="absolute -top-2 -right-2 bg-pink-500 text-white text-xs px-2 rounded-full">
+                                    {wishlist.length}
+                                </span>
+                            )}
+                        </div>
 
+                        {/* 🛒 */}
+                        <div
+                            onClick={() =>
+                                isLogin
+                                    ? navigate("/cart")
+                                    : setShowLoginPopup(true)
+                            }
+                            className="relative cursor-pointer text-xl"
+                        >
+                            🛒
                             {cartCount > 0 && (
                                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs px-2 rounded-full">
                                     {cartCount}
@@ -139,36 +174,41 @@ export default function UserHome() {
                         {/* USER */}
                         <div className="relative group">
                             <div className="flex items-center gap-2 cursor-pointer">
-                                <span>👤</span>
-                                <span className="text-xs md:text-sm text-gray-600">
+                                👤
+                                <span className="text-sm text-gray-600">
                                     {user?.name || "Guest"}
                                 </span>
                             </div>
 
-                            <div className="absolute right-0 mt-2 w-40 bg-white shadow-lg rounded-xl opacity-0 group-hover:opacity-100 transition p-2 z-50">
+                            <div className="absolute right-0 mt-2 w-44 bg-white shadow-lg rounded-xl opacity-0 group-hover:opacity-100 transition p-2 z-50">
+                                <div
+                                    onClick={() => navigate("/history")}
+                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
+                                >
+                                    📦 History
+                                </div>
 
                                 <div
-                                    onClick={goToHistory}
-                                    className="flex justify-between items-center px-3 py-2 rounded-lg hover:bg-gray-100 text-sm cursor-pointer"
+                                    onClick={() => navigate("/wishlist")}
+                                    className="px-3 py-2 hover:bg-gray-100 cursor-pointer text-sm"
                                 >
-                                    <span>📦 History</span>
-
-                                    {historyNotif && (
-                                        <span className="w-2 h-2 bg-red-500 rounded-full"></span>
-                                    )}
+                                    ❤️ Wishlist
                                 </div>
 
                                 {isLogin ? (
                                     <button
-                                        onClick={handleLogout}
-                                        className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 text-sm text-red-500"
+                                        onClick={() => {
+                                            localStorage.clear();
+                                            window.location.reload();
+                                        }}
+                                        className="w-full text-left px-3 py-2 text-red-500 text-sm"
                                     >
                                         Logout
                                     </button>
                                 ) : (
                                     <button
                                         onClick={() => navigate("/login")}
-                                        className="block w-full text-left px-3 py-2 rounded-lg hover:bg-gray-100 text-sm text-indigo-600"
+                                        className="w-full text-left px-3 py-2 text-indigo-600 text-sm"
                                     >
                                         Login
                                     </button>
@@ -179,87 +219,109 @@ export default function UserHome() {
                 </div>
             </div>
 
-            {/* BANNER */}
-            <div className="max-w-7xl mx-auto mt-4 px-4">
-                <div className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white p-5 rounded-2xl shadow">
-                    <h2 className="text-xl font-bold">Promo Hari Ini 🔥</h2>
-                    <p className="text-sm opacity-90">
-                        Diskon besar-besaran untuk semua produk!
-                    </p>
+            {/* HERO (TETAP) */}
+            <div className="max-w-7xl mx-auto px-4 mt-5">
+                <div className="relative h-64 md:h-80 rounded-3xl overflow-hidden shadow-xl">
+                    {heroProducts.map((item, index) => (
+                        <div
+                            key={item._id}
+                            className={`absolute inset-0 transition-all duration-700 ${
+                                index === currentSlide
+                                    ? "opacity-100 scale-100"
+                                    : "opacity-0 scale-105"
+                            }`}
+                        >
+                            <img
+                                src={getImageUrl(item.image)}
+                                className="w-full h-full object-cover"
+                            />
+                        </div>
+                    ))}
                 </div>
             </div>
 
             {/* PRODUK */}
-            <div className="max-w-7xl mx-auto p-4 mt-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div className="max-w-7xl mx-auto px-4 mt-8">
+                <h2 className="text-lg font-semibold mb-4">
+                    Produk Terbaru
+                </h2>
 
-                {filteredProducts.map((item) => (
-                    <div
-                        key={item._id}
-                        className="bg-white rounded-2xl shadow hover:shadow-xl transition overflow-hidden"
-                    >
-                        <img
-                            src={getImageUrl(item.image)}
-                            className="w-full h-40 object-cover"
-                            alt={item.name}
-                        />
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-5">
 
-                        <div className="p-3">
+                    {filteredProducts.slice(0, visible).map((item) => {
+                        const isWish = wishlist.find(i => i._id === item._id);
 
-                            <h2 className="font-semibold text-sm line-clamp-2">
-                                {item.name}
-                            </h2>
-
-                            <p className="text-indigo-600 font-bold mt-1">
-                                Rp {item.price}
-                            </p>
-
-                            <p className="text-xs text-gray-400">
-                                Stok: {item.stock}
-                            </p>
-
-                            <button
-                                onClick={() => addToCart(item)}
-                                className="mt-2 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm"
+                        return (
+                            <div
+                                key={item._id}
+                                onClick={() => navigate(`/product/${item._id}`)}
+                                className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition group overflow-hidden cursor-pointer"
                             >
-                                + Keranjang
-                            </button>
 
-                        </div>
-                    </div>
-                ))}
+                                <div className="relative">
+                                    <img
+                                        src={getImageUrl(item.image)}
+                                        className="w-full h-40 object-cover group-hover:scale-105 transition"
+                                    />
+
+                                    <span className="absolute top-2 left-2 bg-red-500 text-white text-xs px-2 py-1 rounded">
+                                        -{item.discount}%
+                                    </span>
+
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            toggleWishlist(item);
+                                        }}
+                                        className="absolute top-2 right-2 text-xl"
+                                    >
+                                        {isWish ? "❤️" : "🤍"}
+                                    </button>
+                                </div>
+
+                                <div className="p-3">
+                                    <h2 className="text-sm font-medium line-clamp-2">
+                                        {item.name}
+                                    </h2>
+
+                                    <p className="text-xs text-yellow-500 mt-1">
+                                        {renderStars(item.rating)} ({item.rating})
+                                    </p>
+
+                                    <p className="text-indigo-600 font-bold mt-1">
+                                        Rp {item.price}
+                                    </p>
+
+                                    <button
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            addToCart(item);
+                                        }}
+                                        className="mt-3 w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2 rounded-lg text-sm"
+                                    >
+                                        + Keranjang
+                                    </button>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
 
             {/* LOGIN POPUP */}
             {showLoginPopup && (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-                    <div className="bg-white p-6 rounded-xl w-80 text-center">
-
-                        <h2 className="text-lg font-bold mb-2">
-                            Login Dulu
-                        </h2>
-
-                        <p className="text-sm text-gray-500 mb-4">
-                            Untuk menambahkan ke keranjang, kamu harus login dulu
-                        </p>
-
+                    <div className="bg-white p-6 rounded-xl text-center w-80">
+                        <h2 className="font-bold text-lg">Login dulu</h2>
                         <button
                             onClick={() => navigate("/login")}
-                            className="bg-indigo-600 text-white px-4 py-2 rounded-lg w-full"
+                            className="bg-indigo-600 text-white px-4 py-2 mt-4 rounded-lg w-full"
                         >
-                            Login Sekarang
+                            Login
                         </button>
-
-                        <button
-                            onClick={() => setShowLoginPopup(false)}
-                            className="mt-2 text-sm text-gray-500"
-                        >
-                            Nanti saja
-                        </button>
-
                     </div>
                 </div>
             )}
-
         </div>
     );
 }

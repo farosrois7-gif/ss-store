@@ -1,6 +1,7 @@
 import express from "express";
 import {
     getProducts,
+    getProductById,
     createProduct,
     updateProduct,
     deleteProduct,
@@ -11,6 +12,8 @@ import { upload } from "../middlewares/upload.js";
 const router = express.Router();
 
 router.get("/", getProducts);
+
+router.get("/:id", getProductById);
 
 // 🔥 tambahin upload.single("image")
 router.post("/", upload.single("image"), createProduct);

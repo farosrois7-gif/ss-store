@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { api } from "../api/axios";
-import { motion } from "framer-motion";
 
 export default function Dashboard() {
     const [data, setData] = useState({
@@ -28,27 +27,18 @@ export default function Dashboard() {
         fetchDashboard();
     }, []);
 
-    const fadeUp = {
-        hidden: { opacity: 0, y: 15 },
-        show: { opacity: 1, y: 0 }
-    };
-
     return (
-        <div className="p-4 md:p-6 space-y-6">
+        <div className="p-4 md:p-6 space-y-6 animate-fadeIn">
 
             {/* HEADER */}
-            <motion.div
-                variants={fadeUp}
-                initial="hidden"
-                animate="show"
-            >
+            <div>
                 <h1 className="text-xl md:text-2xl font-bold text-gray-800">
                     Dashboard
                 </h1>
                 <p className="text-gray-500 text-xs md:text-sm">
                     Ringkasan aktivitas toko kamu
                 </p>
-            </motion.div>
+            </div>
 
             {/* CARDS */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
@@ -75,13 +65,9 @@ export default function Dashboard() {
                         color: "from-pink-500 to-rose-500"
                     }
                 ].map((item, i) => (
-                    <motion.div
+                    <div
                         key={i}
-                        variants={fadeUp}
-                        initial="hidden"
-                        animate="show"
-                        transition={{ delay: i * 0.1 }}
-                        className="rounded-2xl p-[1px] bg-gradient-to-r hover:scale-[1.02] active:scale-[0.98] transition"
+                        className={`rounded-2xl p-[1px] bg-gradient-to-r ${item.color} hover:scale-[1.03] active:scale-[0.97] transition duration-200`}
                     >
                         <div className="bg-white rounded-2xl p-4 md:p-5 shadow">
 
@@ -97,18 +83,13 @@ export default function Dashboard() {
                                 </h2>
                             )}
                         </div>
-                    </motion.div>
+                    </div>
                 ))}
             </div>
 
             {/* TRANSAKSI */}
-            <motion.div
-                variants={fadeUp}
-                initial="hidden"
-                animate="show"
-                transition={{ delay: 0.3 }}
-                className="bg-white rounded-2xl shadow p-4 md:p-6"
-            >
+            <div className="bg-white rounded-2xl shadow p-4 md:p-6">
+
                 <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-2">
                     <h2 className="text-base md:text-lg font-semibold">
                         Transaksi Terbaru
@@ -134,12 +115,11 @@ export default function Dashboard() {
                             </p>
                         )}
 
-                        {data.latestSales.map((item) => (
-                            <motion.div
+                        {data.latestSales.map((item, i) => (
+                            <div
                                 key={item._id}
-                                initial={{ opacity: 0 }}
-                                animate={{ opacity: 1 }}
-                                className="flex flex-col md:flex-row md:justify-between md:items-center border-b pb-3 gap-2"
+                                className="flex flex-col md:flex-row md:justify-between md:items-center border-b pb-3 gap-2 animate-fadeIn"
+                                style={{ animationDelay: `${i * 0.1}s` }}
                             >
                                 {/* LEFT */}
                                 <div>
@@ -168,11 +148,12 @@ export default function Dashboard() {
                                         {item.status}
                                     </span>
                                 </div>
-                            </motion.div>
+                            </div>
                         ))}
+
                     </div>
                 )}
-            </motion.div>
+            </div>
 
         </div>
     );

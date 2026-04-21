@@ -9,6 +9,8 @@ import Penjualan from "../pages/Penjualan";
 import UserHome from "../pages/UserHome.jsx";
 import Cart from "../pages/Cart";
 import History from "../pages/History";
+import Wishlist from "../pages/Wishlist";
+import ProductDetail from "../pages/ProductDetail";
 import ProtectedRoute from "../components/ProtectedRoute";
 
 export default function AppRoutes() {
@@ -55,6 +57,8 @@ export default function AppRoutes() {
             ========================= */}
             <Route path="/cart" element={<Cart />} />
             <Route path="/history" element={<History />} />
+            <Route path="/wishlist" element={<Wishlist />} />
+            <Route path="/product/:id" element={<ProductDetail />} />
 
             {/* =========================
                 ADMIN PROTECTED ROUTE
