@@ -22,14 +22,14 @@ export const createReview = async (req, res) => {
 
         const review = await Review.create({
             productId,
-            userName: req.user?.name || "User",
+            userName: req.user?.id || "User", // ✅ FIX DI SINI
             rating,
             comment,
         });
 
         res.status(201).json({ data: review });
     } catch (err) {
-        console.log(err); // 🔥 penting untuk debug
+        console.log("CREATE REVIEW ERROR:", err);
         res.status(500).json({ message: err.message });
     }
 };
