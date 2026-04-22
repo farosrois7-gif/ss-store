@@ -7,6 +7,12 @@ export const getReviewsByProduct = async (req, res) => {
     try {
         const { productId } = req.params;
 
+        if (!productId) {
+            return res.status(400).json({
+                message: "productId wajib diisi",
+            });
+        }
+
         const reviews = await Review.find({
             productId,
             status: "approved",
@@ -14,10 +20,10 @@ export const getReviewsByProduct = async (req, res) => {
             .populate("userId", "name")
             .sort({ createdAt: -1 });
 
-        res.status(200).json({ data: reviews });
+        return res.status(200).json({ data: reviews });
     } catch (err) {
         console.log("GET REVIEWS ERROR:", err);
-        res.status(500).json({ message: err.message });
+        return res.status(500).json({ message: err.message });
     }
 };
 
@@ -28,18 +34,30 @@ export const createReview = async (req, res) => {
     try {
         const { productId, rating, comment } = req.body;
 
+        // VALIDASI FIELD
         if (!productId || !rating || !comment) {
             return res.status(400).json({
-                message: "Semua field wajib diisi",
+                message: "productId, rating, comment wajib diisi",
             });
         }
 
-        if (rating < 1 || rating > 5) {
+        // VALIDASI RATING
+        const safeRating = Number(rating);
+
+        if (safeRating < 1 || safeRating > 5) {
             return res.status(400).json({
                 message: "Rating harus 1 - 5",
             });
         }
 
+        // VALIDASI USER LOGIN
+        if (!req.user?.id) {
+            return res.status(401).json({
+                message: "Unauthorized",
+            });
+        }
+
+        // CEK REVIEW DUPLIKAT
         const existing = await Review.findOne({
             productId,
             userId: req.user.id,
@@ -51,18 +69,19 @@ export const createReview = async (req, res) => {
             });
         }
 
+        // CREATE REVIEW
         const review = await Review.create({
             productId,
             userId: req.user.id,
-            rating,
+            rating: safeRating,
             comment,
-            status: "pending", // 🔥 penting untuk admin panel
+            status: "pending",
         });
 
-        res.status(201).json({ data: review });
+        return res.status(201).json({ data: review });
     } catch (err) {
         console.log("CREATE REVIEW ERROR:", err);
-        res.status(500).json({ message: err.message });
+        return res.status(500).json({ message: err.message });
     }
 };
 
@@ -72,14 +91,14 @@ export const createReview = async (req, res) => {
 export const getAllReviews = async (req, res) => {
     try {
         const reviews = await Review.find()
-            .populate("userId", "name")
+            .populate("userId", "name email")
             .populate("productId", "name")
             .sort({ createdAt: -1 });
 
-        res.status(200).json({ data: reviews });
+        return res.status(200).json({ data: reviews });
     } catch (err) {
         console.log("GET ALL REVIEWS ERROR:", err);
-        res.status(500).json({ message: err.message });
+        return res.status(500).json({ message: err.message });
     }
 };
 
@@ -93,13 +112,15 @@ export const approveReview = async (req, res) => {
         );
 
         if (!review) {
-            return res.status(404).json({ message: "Review tidak ditemukan" });
+            return res.status(404).json({
+                message: "Review tidak ditemukan",
+            });
         }
 
-        res.status(200).json({ data: review });
+        return res.status(200).json({ data: review });
     } catch (err) {
         console.log("APPROVE ERROR:", err);
-        res.status(500).json({ message: err.message });
+        return res.status(500).json({ message: err.message });
     }
 };
 
@@ -113,13 +134,15 @@ export const hideReview = async (req, res) => {
         );
 
         if (!review) {
-            return res.status(404).json({ message: "Review tidak ditemukan" });
+            return res.status(404).json({
+                message: "Review tidak ditemukan",
+            });
         }
 
-        res.status(200).json({ data: review });
+        return res.status(200).json({ data: review });
     } catch (err) {
         console.log("HIDE ERROR:", err);
-        res.status(500).json({ message: err.message });
+        return res.status(500).json({ message: err.message });
     }
 };
 
@@ -134,9 +157,11 @@ export const deleteReview = async (req, res) => {
             });
         }
 
-        res.status(200).json({ message: "Review deleted" });
+        return res.status(200).json({
+            message: "Review deleted",
+        });
     } catch (err) {
         console.log("DELETE ERROR:", err);
-        res.status(500).json({ message: err.message });
+        return res.status(500).json({ message: err.message });
     }
 };

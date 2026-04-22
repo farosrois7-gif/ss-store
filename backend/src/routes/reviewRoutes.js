@@ -8,24 +8,20 @@ import {
     deleteReview,
 } from "../controllers/reviewController.js";
 
-import {
-    authMiddleware,
-    adminOnly,
-} from "../middlewares/auth.middleware.js";
+import { authMiddleware, adminOnly } from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-/* ================= PUBLIC ================= */
+// PUBLIC
 router.get("/:productId", getReviewsByProduct);
 
-/* ================= USER ================= */
+// USER
 router.post("/", authMiddleware, createReview);
 
-/* ================= ADMIN PANEL ================= */
+// ADMIN PANEL
 router.get("/", authMiddleware, adminOnly, getAllReviews);
-
-router.patch("/:id/approve", authMiddleware, adminOnly, approveReview);
-router.patch("/:id/hide", authMiddleware, adminOnly, hideReview);
+router.put("/:id/approve", authMiddleware, adminOnly, approveReview);
+router.put("/:id/hide", authMiddleware, adminOnly, hideReview);
 router.delete("/:id", authMiddleware, adminOnly, deleteReview);
 
 export default router;
