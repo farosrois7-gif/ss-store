@@ -107,9 +107,14 @@ export default function ProductDetail() {
         ? product.price - (product.price * discountPercent) / 100
         : 0;
 
+    const approvedReviews = reviews.filter(
+        (r) => r.status === "approved"
+    );
+
     const avgRating =
-        reviews.length > 0
-            ? reviews.reduce((a, b) => a + b.rating, 0) / reviews.length
+        approvedReviews.length > 0
+            ? approvedReviews.reduce((a, b) => a + b.rating, 0) /
+            approvedReviews.length
             : 0;
 
     if (loading) {
@@ -215,11 +220,13 @@ export default function ProductDetail() {
                     <h2 className="font-bold mb-4">Ulasan Produk</h2>
 
                     <div className="space-y-3 mb-6">
-                        {reviews.map((r) => (
+                        {approvedReviews.map((r) => (
                             <div key={r._id} className="border-b pb-2">
                                 <p className="font-semibold">{r.userName}</p>
                                 <p className="text-yellow-500">
-                                    {"⭐".repeat(r.rating)}
+                                    {[...Array(r.rating)].map((_, i) => (
+                                        <span key={i}>⭐</span>
+                                    ))}
                                 </p>
                                 <p className="text-sm">{r.comment}</p>
                             </div>
