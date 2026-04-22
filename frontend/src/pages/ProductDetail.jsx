@@ -46,26 +46,17 @@ export default function ProductDetail() {
         try {
             const token = localStorage.getItem("token");
 
-            // ❌ kalau belum login
             if (!token) {
                 alert("Silakan login dulu");
                 navigate("/login");
                 return;
             }
 
-            await api.post(
-                "/reviews",
-                {
-                    productId: id,
-                    rating,
-                    comment,
-                },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
+            await api.post("/reviews", {
+                productId: id,
+                rating,
+                comment,
+            });
 
             alert("Review berhasil dikirim");
 
@@ -75,7 +66,7 @@ export default function ProductDetail() {
             fetchReviews();
         } catch (err) {
             console.log(err?.response?.data || err.message);
-            alert("Gagal kirim review");
+            alert(err?.response?.data?.message || "Gagal kirim review");
         }
     };
     const addToCart = () => {
