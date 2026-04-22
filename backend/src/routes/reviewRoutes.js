@@ -3,21 +3,29 @@ import {
     getReviewsByProduct,
     createReview,
     getAllReviews,
+    approveReview,
+    hideReview,
     deleteReview,
 } from "../controllers/reviewController.js";
 
-import { authMiddleware } from "../middlewares/auth.middleware.js";
+import {
+    authMiddleware,
+    adminOnly,
+} from "../middlewares/auth.middleware.js";
 
 const router = express.Router();
 
-// PUBLIC
+/* ================= PUBLIC ================= */
 router.get("/:productId", getReviewsByProduct);
 
-// USER
+/* ================= USER ================= */
 router.post("/", authMiddleware, createReview);
 
-// ADMIN (sementara auth dulu)
-router.get("/", authMiddleware, getAllReviews);
-router.delete("/:id", authMiddleware, deleteReview);
+/* ================= ADMIN PANEL ================= */
+router.get("/", authMiddleware, adminOnly, getAllReviews);
+
+router.patch("/:id/approve", authMiddleware, adminOnly, approveReview);
+router.patch("/:id/hide", authMiddleware, adminOnly, hideReview);
+router.delete("/:id", authMiddleware, adminOnly, deleteReview);
 
 export default router;
